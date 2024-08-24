@@ -1,41 +1,77 @@
 import math
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, List
+
+ALPHANUMERIC_POINTS = 1
+ROUND_TOTAL_POINTS = 50
+MULTIPLE_TOTAL_POINTS = 25
+PAIR_OF_ITEMS_POINTS = 5
+DESC_MULTIPLIER = 0.2
+ODD_PURCHASE_DATE_POINTS = 6
+PURCHASE_TIME_POINTS = 10
 
 
 def process_receipt(receipt: Dict[str, Any]) -> int:
-    """Takes in a JSON object of a receipt and returns assigned points."""
+    """Takes in a valid JSON receipt and returns assigned points.
+    Assumes the input object aligns with the provided API contract."""
     points = 0
-    # One point for every alphanumeric character in the retailer name.
-    points += sum(1 for char in receipt["retailer"] if char.isalnum())
+    # Calculate points based on retailer name
+    points += calculate_retailer_points(receipt["retailer"])
 
-    # 50 points if the total is a round dollar amount with no cents.
-    if int(receipt["total"].split(".")[1]) == 0:
-        points += 50
+    # Calculate points based on total amount (round dollar amount and multiple)
+    points += calculate_total_points(receipt["total"])
 
-    # 25 points if the total is a multiple of 0.25.
-    if float(receipt["total"]) % 0.25 == 0:
-        points += 25
+    # Calculate points based on pairs of items
+    points += calculate_item_pairs_points(receipt["items"])
 
-    # 5 points for every two items on the receipt.
-    points += (len(receipt["items"]) // 2) * 5
-
-    # If the trimmed length of the item description is a multiple of 3,
-    # multiply the price by 0.2 and round up to the nearest integer.
-    # The result is the number of points earned.
+    # Calculate points based on item descriptions
     for item in receipt["items"]:
-        if len(item["shortDescription"].strip()) % 3 == 0:
-            points += math.ceil(float(item["price"]) * 0.2)
+        points += calculate_item_desc_points(item)
 
-    # 6 points if the day in the purchase date is odd.
-    if int(receipt["purchaseDate"].split("-")[-1]) % 2:
-        points += 6
+    # Calculate points based on purchaseDate
+    points += calculate_purchase_date_points(receipt["purchaseDate"])
 
-    # 10 points if the time of purchase is after 2:00pm and before 4:00pm.
-    minTime = datetime.strptime("14:00", "%H:%M").time()
-    maxTime = datetime.strptime("16:00", "%H:%M").time()
-    purchaseTime = datetime.strptime(receipt["purchaseTime"], "%H:%M").time()
-    if minTime < purchaseTime < maxTime:
-        points += 10
+    # Calculate points based on purchaseTime
+    points += calculate_purchase_time_points(receipt["purchaseTime"])
 
     return points
+
+
+def calculate_retailer_points(retailer: str) -> int:
+    return sum(ALPHANUMERIC_POINTS for char in retailer if char.isalnum())
+
+
+def calculate_total_points(total: str) -> int:
+    points = 0
+    if int(total.split(".")[1]) == 0:
+        points += ROUND_TOTAL_POINTS
+    if float(total) % 0.25 == 0:
+        points += MULTIPLE_TOTAL_POINTS
+    return points
+
+
+def calculate_item_pairs_points(items: List[Dict[str, str]]) -> int:
+    return (len(items) // 2) * PAIR_OF_ITEMS_POINTS
+
+
+def calculate_item_desc_points(item: Dict[str, str]) -> int:
+    if len(item["shortDescription"].strip()) % 3 == 0:
+        return math.ceil(float(item["price"]) * DESC_MULTIPLIER)
+    return 0
+
+
+def calculate_purchase_date_points(purchaseDate: str) -> int:
+    return (
+        ODD_PURCHASE_DATE_POINTS if int(purchaseDate.split("-")[-1]) % 2 else 0
+    )
+
+
+def calculate_purchase_time_points(purchaseTime: str) -> int:
+    minTime = datetime.strptime("14:00", "%H:%M").time()
+    maxTime = datetime.strptime("16:00", "%H:%M").time()
+    formattedPurchaseTime = datetime.strptime(purchaseTime, "%H:%M").time()
+    return (
+        PURCHASE_TIME_POINTS
+        if minTime < formattedPurchaseTime < maxTime
+        else 0
+    )
