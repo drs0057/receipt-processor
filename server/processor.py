@@ -13,7 +13,8 @@ PURCHASE_TIME_POINTS = 10
 
 def process_receipt(receipt: Dict[str, Any]) -> int:
     """Takes in a valid JSON receipt and returns assigned points.
-    Assumes the input object aligns with the provided API contract."""
+    Assumes the input object is valid in accordance with the provided
+    API contract."""
     points = 0
     # Calculate points based on retailer name
     points += calculate_retailer_points(receipt["retailer"])

@@ -20,6 +20,7 @@ from processor import (
     calculate_purchase_time_points,
     calculate_retailer_points,
     calculate_total_points,
+    process_receipt,
 )
 
 #   ===== Testing retailer name =====
@@ -215,3 +216,60 @@ def test_calculate_purchase_time_points(
     purchaseTime: str, expectedPoints: str
 ):
     assert calculate_purchase_time_points(purchaseTime) == expectedPoints
+
+
+#   ===== Integration testing for entire processor =====
+
+# Assuming all composite functions pass testing, this should be simple.
+# Just test a few simple configurations.
+
+
+@pytest.mark.parametrize(
+    "receipt, expectedPoints",
+    [
+        pytest.param(
+            {
+                "retailer": "Target",
+                "purchaseDate": "2022-01-01",
+                "purchaseTime": "13:01",
+                "items": [
+                    {
+                        "shortDescription": "Emils Cheese Pizza",
+                        "price": "12.25",
+                    },
+                    {
+                        "shortDescription": "Emils Cheese Pizz",
+                        "price": "12.25",
+                    },
+                ],
+                "total": "35.35",
+            },
+            ALPHANUMERIC_POINTS * 6
+            + PAIR_OF_ITEMS_POINTS * 1
+            + math.ceil(12.25 * DESC_MULTIPLIER)
+            + ODD_PURCHASE_DATE_POINTS,
+            id="Some valid retailer chars, a couple pairs of items, one valid item desc, odd purchase day",
+        ),
+        pytest.param(
+            {
+                "retailer": "T",
+                "purchaseDate": "2022-01-02",
+                "purchaseTime": "15:00",
+                "items": [
+                    {
+                        "shortDescription": "Emils Cheese Pizz",
+                        "price": "12.25",
+                    },
+                ],
+                "total": "35.00",
+            },
+            ALPHANUMERIC_POINTS * 1
+            + ROUND_TOTAL_POINTS
+            + MULTIPLE_TOTAL_POINTS
+            + PURCHASE_TIME_POINTS,
+            id="Valid retail char, round total, valid purchase time",
+        ),
+    ],
+)
+def test_process_receipt(receipt: Dict[str, Any], expectedPoints: int):
+    assert process_receipt(receipt) == expectedPoints
