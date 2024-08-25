@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, List
 
-from receipt_points import calculate_receipt_points
+from .points import calculate_receipt_points
 
 REGEX = {
     "retailer": "^[\\w\\s\\-&]+$",
@@ -28,7 +28,7 @@ class ReceiptProcessor:
         """
         # Check if the receipt has been uploaded before, avoid revalidation
         if (ID := self._generate_id(receipt)) in self.receipts:
-            print("Duplicate receipt uploaded. Returning previous ID...")
+            print("Duplicate receipt uploaded. Returning previous id...")
             return ID
 
         if not self._valid_receipt(receipt):

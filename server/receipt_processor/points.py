@@ -2,7 +2,7 @@ import math
 from datetime import datetime
 from typing import Any, Dict, List
 
-from receipt_points.configuration import (
+from .configuration import (
     ALPHANUMERIC_POINTS,
     DESC_MULTIPLIER,
     MULTIPLE_TOTAL_POINTS,

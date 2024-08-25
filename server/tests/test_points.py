@@ -6,7 +6,7 @@ import math
 from typing import Any, Dict, List
 
 import pytest
-from receipt_points.configuration import (
+from receipt_processor.configuration import (
     ALPHANUMERIC_POINTS,
     DESC_MULTIPLIER,
     MULTIPLE_TOTAL_POINTS,
@@ -15,7 +15,7 @@ from receipt_points.configuration import (
     PURCHASE_TIME_POINTS,
     ROUND_TOTAL_POINTS,
 )
-from receipt_points.points import (
+from receipt_processor.points import (
     calculate_item_desc_points,
     calculate_item_pairs_points,
     calculate_purchase_date_points,
