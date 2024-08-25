@@ -1,78 +1,131 @@
-import math
+import json
+import re
+import uuid
 from datetime import datetime
+from hashlib import sha256
 from typing import Any, Dict, List
 
-ALPHANUMERIC_POINTS = 1
-ROUND_TOTAL_POINTS = 50
-MULTIPLE_TOTAL_POINTS = 25
-PAIR_OF_ITEMS_POINTS = 5
-DESC_MULTIPLIER = 0.2
-ODD_PURCHASE_DATE_POINTS = 6
-PURCHASE_TIME_POINTS = 10
+from receipt_points import calculate_receipt_points
+
+REGEX = {
+    "retailer": "^[\\w\\s\\-&]+$",
+    "total": "^\\d+\\.\\d{2}$",
+    "desc": "^[\\w\\s\\-]+$",
+    "price": "^\\d+\\.\\d{2}$",
+}
 
 
-def process_receipt(receipt: Dict[str, Any]) -> int:
-    """Takes in a valid JSON receipt and returns assigned points.
-    Assumes the input object is valid in accordance with the provided
-    API contract."""
-    points = 0
-    # Calculate points based on retailer name
-    points += calculate_retailer_points(receipt["retailer"])
+class ReceiptProcessor:
+    def __init__(self) -> None:
+        # Dictionary mapping IDs to points, intended to persist in memory only
+        self.receipts = {}
 
-    # Calculate points based on total amount (round dollar amount and multiple)
-    points += calculate_total_points(receipt["total"])
+    def process_receipt(self, receipt: List[Dict[str, Any]]) -> str:
+        """Processes receipt by validating, generating an id, calculating
+        points, persisting the (id, points) in memory, then returning the id.
+        """
+        # Check if the receipt has been uploaded before, avoid revalidation
+        if (ID := self._generate_id(receipt)) in self.receipts:
+            print("Duplicate receipt uploaded. Returning previous ID...")
+            return ID
 
-    # Calculate points based on pairs of items
-    points += calculate_item_pairs_points(receipt["items"])
+        if not self._valid_receipt(receipt):
+            raise ValueError("Invalid receipt")
 
-    # Calculate points based on item descriptions
-    for item in receipt["items"]:
-        points += calculate_item_desc_points(item)
+        ID = self._generate_id(receipt)
+        self.receipts[ID] = calculate_receipt_points(receipt)
+        print(f"New receipt stored: id: {ID} points: {self.receipts[ID]}")
+        return ID
 
-    # Calculate points based on purchaseDate
-    points += calculate_purchase_date_points(receipt["purchaseDate"])
+    def _generate_id(self, receipt: Dict[str, Any]) -> str:
+        """Generates a unique id based on the hash of the receipt. Identical
+        receipts will produce the same id."""
+        # Convert JSON object to a string, sort keys for consistency
+        receiptStr = json.dumps(receipt, sort_keys=True)
+        # Generate a unique id based on the hash of the receipt
+        return str(uuid.uuid5(uuid.NAMESPACE_DNS, receiptStr))
 
-    # Calculate points based on purchaseTime
-    points += calculate_purchase_time_points(receipt["purchaseTime"])
+    def _valid_receipt(self, receipt: Dict[str, Any]) -> bool:
+        """Validates the receipt based on the provided API contract."""
+        return (
+            self._validate_retailer(receipt)
+            and self._validate_purchase_date(receipt)
+            and self._validate_purchase_time(receipt)
+            and self._validate_items(receipt)
+            and self._validate_total(receipt)
+        )
 
-    return points
+    def _validate_retailer(self, receipt: Dict[str, Any]) -> bool:
+        """Validate the retailer field."""
+        return (
+            "retailer" in receipt
+            and isinstance(receipt["retailer"], str)
+            and re.match(REGEX["retailer"], receipt["retailer"])
+        )
 
+    def _validate_purchase_date(self, receipt: Dict[str, Any]) -> bool:
+        """Validate the purchase date field. Must conform to the
+        ISO 8601 standard for dates."""
+        if "purchaseDate" not in receipt or not isinstance(
+            receipt["purchaseDate"], str
+        ):
+            return False
+        try:
+            datetime.strptime(receipt["purchaseDate"], "%Y-%m-%d")
+            return True
+        except ValueError:
+            return False
 
-def calculate_retailer_points(retailer: str) -> int:
-    return sum(ALPHANUMERIC_POINTS for char in retailer if char.isalnum())
+    def _validate_purchase_time(self, receipt: Dict[str, Any]) -> bool:
+        """Validate the purchase time field. Must conform to the
+        ISO 8601 standard for time."""
+        if "purchaseTime" not in receipt or not isinstance(
+            receipt["purchaseTime"], str
+        ):
+            return False
+        try:
+            datetime.strptime(receipt["purchaseTime"], "%H:%M")
+            return True
+        except ValueError:
+            return False
 
+    def _validate_items(self, receipt: Dict[str, Any]) -> bool:
+        """Validate the items list and each item's description and price."""
+        if (
+            "items" not in receipt
+            or not isinstance(receipt["items"], list)
+            or len(receipt["items"]) < 1
+        ):
+            return False
 
-def calculate_total_points(total: str) -> int:
-    points = 0
-    if int(total.split(".")[1]) == 0:
-        points += ROUND_TOTAL_POINTS
-    if float(total) % 0.25 == 0:
-        points += MULTIPLE_TOTAL_POINTS
-    return points
+        for item in receipt["items"]:
+            if not (
+                self._validate_item_description(item)
+                and self._validate_item_price(item)
+            ):
+                return False
+        return True
 
+    def _validate_item_description(self, item: Dict[str, Any]) -> bool:
+        """Validate the short description of an item."""
+        return (
+            "shortDescription" in item
+            and isinstance(item["shortDescription"], str)
+            and re.match(REGEX["desc"], item["shortDescription"])
+        )
 
-def calculate_item_pairs_points(items: List[Dict[str, str]]) -> int:
-    return (len(items) // 2) * PAIR_OF_ITEMS_POINTS
+    def _validate_item_price(self, item: Dict[str, Any]) -> bool:
+        """Validate the price of an item."""
+        return (
+            "price" in item
+            and isinstance(item["price"], str)
+            and re.match(REGEX["price"], item["price"])
+        )
 
-
-def calculate_item_desc_points(item: Dict[str, str]) -> int:
-    if len(item["shortDescription"].strip()) % 3 == 0:
-        return math.ceil(float(item["price"]) * DESC_MULTIPLIER)
-    return 0
-
-
-def calculate_purchase_date_points(purchaseDate: str) -> int:
-    return (
-        ODD_PURCHASE_DATE_POINTS if int(purchaseDate.split("-")[-1]) % 2 else 0
-    )
-
-
-def calculate_purchase_time_points(purchaseTime: str) -> int:
-    minTime = datetime.strptime("14:00", "%H:%M").time()
-    maxTime = datetime.strptime("16:00", "%H:%M").time()
-    formattedPurchaseTime = datetime.strptime(purchaseTime, "%H:%M").time()
-    return (
-        PURCHASE_TIME_POINTS
-        if minTime < formattedPurchaseTime < maxTime
-        else 0
-    )
+    def _validate_total(self, receipt: Dict[str, Any]) -> bool:
+        """Validate the total field."""
+        return (
+            "total" in receipt
+            and isinstance(receipt["total"], str)
+            and re.match(REGEX["total"], receipt["total"])
+        )
