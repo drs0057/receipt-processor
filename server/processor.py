@@ -2,7 +2,6 @@ import json
 import re
 import uuid
 from datetime import datetime
-from hashlib import sha256
 from typing import Any, Dict, List
 
 from receipt_points import calculate_receipt_points
