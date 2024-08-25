@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from processor import ReceiptProcessor
 
 app = Flask(__name__)
+
 receiptProcessor = ReceiptProcessor()
 
 

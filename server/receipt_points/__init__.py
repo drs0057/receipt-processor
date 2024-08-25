@@ -1,1 +1,1 @@
-from .points import calculate_receipt_points
+from receipt_points.points import calculate_receipt_points

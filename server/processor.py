@@ -15,6 +15,9 @@ REGEX = {
 
 
 class ReceiptProcessor:
+    """Responsible for processing receipts, including receipt validation,
+    generating ids, calculating points, and storing ids/points."""
+
     def __init__(self) -> None:
         # Dictionary mapping IDs to points, intended to persist in memory only
         self.receipts = {}

@@ -2,13 +2,15 @@ import math
 from datetime import datetime
 from typing import Any, Dict, List
 
-ALPHANUMERIC_POINTS = 1
-ROUND_TOTAL_POINTS = 50
-MULTIPLE_TOTAL_POINTS = 25
-PAIR_OF_ITEMS_POINTS = 5
-DESC_MULTIPLIER = 0.2
-ODD_PURCHASE_DATE_POINTS = 6
-PURCHASE_TIME_POINTS = 10
+from receipt_points.configuration import (
+    ALPHANUMERIC_POINTS,
+    DESC_MULTIPLIER,
+    MULTIPLE_TOTAL_POINTS,
+    ODD_PURCHASE_DATE_POINTS,
+    PAIR_OF_ITEMS_POINTS,
+    PURCHASE_TIME_POINTS,
+    ROUND_TOTAL_POINTS,
+)
 
 
 def calculate_receipt_points(receipt: Dict[str, Any]) -> int:
