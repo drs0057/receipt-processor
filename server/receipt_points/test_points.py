@@ -6,7 +6,7 @@ import math
 from typing import Any, Dict, List
 
 import pytest
-from processor import (
+from receipt_points import (
     ALPHANUMERIC_POINTS,
     DESC_MULTIPLIER,
     MULTIPLE_TOTAL_POINTS,
@@ -16,11 +16,11 @@ from processor import (
     ROUND_TOTAL_POINTS,
     calculate_item_desc_points,
     calculate_item_pairs_points,
+    calculate_points,
     calculate_purchase_date_points,
     calculate_purchase_time_points,
     calculate_retailer_points,
     calculate_total_points,
-    process_receipt,
 )
 
 #   ===== Testing retailer name =====
@@ -272,4 +272,4 @@ def test_calculate_purchase_time_points(
     ],
 )
 def test_process_receipt(receipt: Dict[str, Any], expectedPoints: int):
-    assert process_receipt(receipt) == expectedPoints
+    assert calculate_points(receipt) == expectedPoints
