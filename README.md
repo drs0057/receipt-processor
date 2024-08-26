@@ -16,16 +16,33 @@ git clone https://github.com/drs0057/receipt-webservice.git
 cd receipt-webservice/server
 ```
 
-3. Build and then run the docker image
+3. Build the docker image
 
 ```
 docker build -t receipt_service .
+```
+
+4. Run the docker container
+
+```
 docker run -d -p 8000:8000 receipt_service
 ```
 
-## Elaboration
+## Implementation
+
+I decided to bulid this simple webservice using Python and Flask. This is
+one of the simplest and easiest combos to quickly get a protoype working.
+I chose to have duplicate receipts return the same id, eliminating repeat
+calculations on the backend. Look below to read some brief thoughts on testing
+and assumptions.
 
 ### Testing
+
+Points unit testing: Take a look at the server/tests/test_points.py file to see my approach
+to basic unit testing. I used pytest and the pytest.parametrize functionality to
+test varying receipt inputs. I wanted to implement this to showcase my approach
+to testing-based development. This gave me confidence that my points calculations
+were robust and ready for deployment.
 
 ### Consideration/Assumptions
 

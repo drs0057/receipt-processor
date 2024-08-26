@@ -6,7 +6,6 @@ WORKDIR /app
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# TODO: Just upload what you need here
 COPY receipt_processor/ /app/receipt_processor
 COPY host.py /app/
 
